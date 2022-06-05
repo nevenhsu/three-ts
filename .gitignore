@@ -1,0 +1,12 @@
+/.idea
+.DS_Store
+.vscode
+*.env
+
+**/node_modules
+# ignore application
+# /services/*/*
+
+# Keep files
+!/**/.gitkeep
+!/services/**/Dockerfile*
