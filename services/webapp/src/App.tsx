@@ -1,95 +1,80 @@
-import { useEffect } from 'react'
-import { BrowserRouter, Route, Routes, Link } from 'react-router-dom'
-import tempApi from 'services/tempApi'
-import { useAppDispatch } from 'store/hooks'
-import { toggleMode } from 'store/slices/userDefault'
-import { styled } from '@mui/material/styles'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import MuiLink from '@mui/material/Link'
-import logo from './logo.svg'
+import { useState, useEffect, useRef } from 'react'
+import { useOnWindowResize } from 'rooks'
+import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { Canvas, useThree, useFrame } from '@react-three/fiber'
+import type { MeshProps } from '@react-three/fiber'
 import './App.scss'
 
-const PREFIX = 'App'
-const classes = {
-    root: `${PREFIX}-root`,
-}
-const Root = styled('div')(({ theme }) => ({
-    [`&.${classes.root}`]: {
-        textAlign: 'center',
-        backgroundColor: theme.palette.background.default,
-    },
-}))
+function Box(props: MeshProps) {
+    // This reference will give us direct access to the mesh
+    const mesh = useRef<THREE.Mesh>(null)
 
-export default function App() {
+    // Set up state for the hovered and active state
+    const [hovered, setHover] = useState(false)
+
+    // Subscribe this component to the render-loop, rotate the mesh every frame
+    useFrame((state, delta) => {
+        if (mesh.current) {
+            mesh.current.rotation.x += 0.01
+            mesh.current.rotation.y += 0.01
+        }
+    })
+
+    return (
+        <mesh
+            {...props}
+            ref={mesh}
+            onPointerOver={(event) => setHover(true)}
+            onPointerOut={(event) => setHover(false)}
+        >
+            <boxGeometry args={[1, 1, 1]} />
+            <meshBasicMaterial color="orange" wireframe />
+        </mesh>
+    )
+}
+
+function CameraController() {
+    const { camera, gl } = useThree()
+
     useEffect(() => {
-        tempApi
-            .greet()
-            .then((str) => console.log(str))
-            .catch((error) => console.log(error))
+        const controls = new OrbitControls(camera, gl.domElement)
+        controls.minDistance = 2
+        controls.maxDistance = 20
+        return () => {
+            controls.dispose()
+        }
+    }, [camera, gl])
+
+    return null
+}
+
+function Scene() {
+    const { camera, gl, scene } = useThree()
+
+    useEffect(() => {
+        camera.position.z = 2
+        gl.setSize(window.innerWidth, window.innerHeight)
+        scene.background = new THREE.Color(0x000000)
     }, [])
 
+    useOnWindowResize(() => {
+        gl.setSize(window.innerWidth, window.innerHeight)
+    })
+
     return (
-        <Root className={classes.root}>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/info" element={<Info />} />
-                    <Route path="/" element={<Home />} />
-                </Routes>
-            </BrowserRouter>
-        </Root>
+        <>
+            <CameraController />
+            <ambientLight />
+            <Box />
+        </>
     )
 }
 
-function Home() {
-    const dispatch = useAppDispatch()
-    const handleToggle = () => {
-        dispatch(toggleMode())
-    }
-
+export default function App() {
     return (
-        <header className="App-header">
-            <img src={logo} className="App-logo" alt="logo" />
-            <Typography variant="h5" gutterBottom>
-                Edit <code>src/App.tsx</code> and save to reload.
-            </Typography>
-
-            <div style={{ marginBottom: 24 }}>
-                <Link style={{ color: '#61dafb' }} to="/info">
-                    Go to info
-                </Link>
-            </div>
-
-            <Button variant="contained" onClick={handleToggle}>
-                Toggle Theme
-            </Button>
-        </header>
-    )
-}
-
-function Info() {
-    return (
-        <header className="App-header">
-            <img src={logo} className="App-logo" alt="logo" />
-
-            <Typography variant="h5" gutterBottom>
-                Edit <code>src/App.tsx</code> and save to reload.
-            </Typography>
-
-            <div style={{ marginBottom: 24 }}>
-                <Link style={{ color: '#61dafb' }} to="/">
-                    Go back
-                </Link>
-            </div>
-
-            <MuiLink
-                className="App-link"
-                href="https://reactjs.org"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                Learn React!!
-            </MuiLink>
-        </header>
+        <Canvas>
+            <Scene />
+        </Canvas>
     )
 }
