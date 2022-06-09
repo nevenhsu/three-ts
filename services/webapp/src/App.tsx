@@ -2,9 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useOnWindowResize } from 'rooks'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import StatsModule from 'three/examples/jsm/libs/stats.module'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import type { MeshProps } from '@react-three/fiber'
 import './App.scss'
+
+const stats = getStats()
 
 function Box(props: MeshProps) {
     // This reference will give us direct access to the mesh
@@ -62,6 +65,10 @@ function Scene() {
         gl.setSize(window.innerWidth, window.innerHeight)
     })
 
+    useFrame((state, delta) => {
+        stats.update()
+    })
+
     return (
         <>
             <CameraController />
@@ -77,4 +84,11 @@ export default function App() {
             <Scene />
         </Canvas>
     )
+}
+
+function getStats() {
+    const stats = StatsModule()
+    const root = document.getElementById('root') as HTMLElement
+    root.appendChild(stats.dom)
+    return stats
 }
